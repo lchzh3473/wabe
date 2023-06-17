@@ -13,7 +13,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: 'src/index.ts',
-      name: '$Example$',
+      name: 'WebAssetBundleExtractor',
       formats: ['es'],
       fileName: `script-${pkg.version}`
     },

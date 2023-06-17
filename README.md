@@ -1,12 +1,14 @@
-# [Demo](https://www.example.com/index "$Example$")
+# [Demo](https://lchz&#104;3473.github.io/wabe/index "Unity资源提取器")
 
 ## 简介
 
-如题，这是一个示例项目。
+wabe = Web-based Asset Bundle Extractor
 
-## 文档
+如题，用于提取Unity资源文件，仅用于学习交流。
 
-访问 [docs.lchz&#104;.net](https://docs.lchz&#104;.net/project/$Example$) (Working in progress)
+<!-- ## 文档
+
+访问 [docs.lchz&#104;.net](https://docs.lchz&#104;.net/project/$Example$) (Working in progress) -->
 
 ## 更新日志
 
