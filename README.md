@@ -4,7 +4,11 @@
 
 wabe = Web-based Asset Bundle Extractor
 
-如题，用于提取Unity资源文件，仅用于学习交流。
+如题，基于 Web 的 Unity 资源提取器，仅用于学习交流。
+
+- LZ4 块解压缩使用 [lz4-wasm](https://github.com/gorhill/lz4-wasm) by gorhill
+
+- fsb 格式读取使用 [FMOD Core API](https://www.fmod.com/docs/2.02/api/platforms-html5.html#fastcomp-wasm) by Firelight Technologies Pty Ltd.
 
 <!-- ## 文档
 

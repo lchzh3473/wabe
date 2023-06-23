@@ -92,29 +92,53 @@ export default class App {
           // console.log('Texture2D', obj);
           this.callback('Texture2D', imageBitmap);
         } else if (obj instanceof AudioClip) {
-          const playSound = async(callback: (text: string) => void) => {
-            const audioData = obj.m_AudioData.getData();
-            const pcm = await new Promise<{ buffer: Float32Array; frequency: number; channels: number }>(resolve => {
-              const worker = new Worker('./fmod.worker.js');
-              worker.postMessage(audioData, [audioData.buffer]);
-              worker.onmessage = ({ data }) => {
-                if (data.progress != null) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                  callback(data.progress);
-                } else if (data.pcm != null) {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                  resolve(data.pcm);
-                }
-              };
-            });
-            // const pcm = await fsb2pcm(audioData, callback);
-            const actx = new AudioContext();
-            playFloat32PCM(actx, pcm.buffer, pcm.frequency, pcm.channels);
-          };
+          const controller = document.createElement('div');
+          const textNode = document.createTextNode('');
+          controller.appendChild(textNode);
+          const audioData = obj.m_AudioData.getData();
+          // const pcm = await fsb2pcm(audioData, callback);
+          new Promise<{ buffer: Float32Array; frequency: number; channels: number }>(resolve => {
+            const worker = new Worker('./fmod.worker.js');
+            worker.postMessage(audioData, [audioData.buffer]);
+            worker.onmessage = ({ data }) => {
+              if (data.progress != null) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                textNode.textContent = `Progress: ${Number(data.progress * 100).toFixed(2)}%`;
+              } else if (data.pcm != null) {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                resolve(data.pcm);
+              }
+            };
+          }).then(pcm => {
+            const playButton = document.createElement('button');
+            playButton.textContent = 'Play';
+            const playSound = () => {
+              const actx = new AudioContext();
+              playFloat32PCM(actx, pcm.buffer, pcm.frequency, pcm.channels);
+            };
+            playButton.addEventListener('click', playSound);
+            controller.appendChild(playButton);
+            const downloadButton = document.createElement('button');
+            downloadButton.textContent = 'Download';
+            const downloadSound = () => {
+              console.log(pcm);
+              const pcmInt16 = float32ToInt16(pcm.buffer);
+              const wav = createWAV(pcmInt16, pcm.frequency, 16, pcm.channels);
+              const blob = new Blob([wav], { type: 'audio/wav' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'sound.wav';
+              a.click();
+              URL.revokeObjectURL(url);
+            };
+            downloadButton.addEventListener('click', downloadSound);
+            controller.appendChild(downloadButton);
+          });
           // console.log(obj.assetsFile.originalPath);
           // console.log('AudioClip', obj);
           // console.log(obj.m_AudioData.getData());
-          this.callback('AudioClip', playSound);
+          this.callback('AudioClip', controller);
         } else {
           // console.log(obj);
           this.callback('Unknown', obj);
@@ -177,7 +201,7 @@ function getImage(obj: Texture2D): ImageData {
       return new ImageData(new Uint8ClampedArray(obj.m_Width * obj.m_Height * 4), obj.m_Width, obj.m_Height);
   }
 }
-function readPCMFloat(actx: AudioContext, pcmData = new ArrayBuffer(32), sampleRate = 44100, channels = 2) {
+function decodePCMFloat(actx: AudioContext, pcmData = new ArrayBuffer(32), sampleRate = 44100, channels = 2) {
   const data = new Float32Array(pcmData);
   const length = data.length / channels;
   const buffer = actx.createBuffer(channels, length, sampleRate);
@@ -191,8 +215,47 @@ function readPCMFloat(actx: AudioContext, pcmData = new ArrayBuffer(32), sampleR
 }
 function playFloat32PCM(actx: AudioContext, pcmData = new ArrayBuffer(32), sampleRate = 44100, channels = 2) {
   const source = actx.createBufferSource();
-  const buffer = readPCMFloat(actx, pcmData, sampleRate, channels);
+  const buffer = decodePCMFloat(actx, pcmData, sampleRate, channels);
   source.buffer = buffer;
   source.connect(actx.destination);
   source.start();
 }
+function float32ToInt16(input: ArrayBuffer) {
+  const data = new Float32Array(input);
+  const output = new Int16Array(data.length);
+  for (let i = 0; i < data.length; i++) {
+    const s = Math.max(-1, Math.min(1, data[i]));
+    output[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return output.buffer;
+  // const m = data.reduce((a, b) => Math.max(a, Math.abs(b)), 0);
+  // return new Int16Array(data.map(v => v / m * 0x7fff)).buffer;
+}
+function createWAV(pcmData = new ArrayBuffer(16), sampleRate = 44100, bits = 16, channels = 1): ArrayBuffer {
+  const bytes = pcmData.byteLength;
+  const data = new DataView(new ArrayBuffer(bytes + 44));
+  data.setUint32(0, 0x52494646, false); // RIFF
+  data.setUint32(4, bytes + 36, true); // size
+  data.setUint32(8, 0x57415645, false); // WAVE
+  data.setUint32(12, 0x666d7420, false); // fmt
+  data.setUint32(16, 16, true); // 16bit
+  data.setUint16(20, 1, true); // PCM
+  data.setUint16(22, channels, true); // channels
+  data.setUint32(24, sampleRate, true); // sampleRate
+  data.setUint32(28, sampleRate * channels * bits / 8, true); // bytesPerSecond
+  data.setUint16(32, channels * bits / 8, true); // blockAlign
+  data.setUint16(34, bits, true); // bitsPerSample
+  data.setUint32(36, 0x64617461, false); // data
+  data.setUint32(40, bytes, true); // size
+  new Uint8Array(data.buffer, 44).set(new Uint8Array(pcmData));
+  return data.buffer;
+}
+// function playWAV(buffer: ArrayBuffer): void {
+//   const actx = new AudioContext();
+//   const source = actx.createBufferSource();
+//   actx.decodeAudioData(buffer, ab => {
+//     source.buffer = ab;
+//     source.connect(actx.destination);
+//     source.start();
+//   });
+// }

@@ -25,22 +25,8 @@ app.callback = (type: string, obj: unknown) => {
     canvas.style.cssText += ';width:80%;max-width:854px;min-height:100px;display:block;margin:0 auto;image-rendering:pixelated';
   }
   if (type === 'AudioClip') {
-    const subContainer = document.createElement('div');
+    const subContainer = obj as HTMLDivElement;
     container.appendChild(subContainer);
-    subContainer.style.cssText += ';width:80%;max-width:854px;display:block;margin:0 auto';
-    const textNode = document.createTextNode('');
-    subContainer.appendChild(textNode);
-    const callback = (text: string) => {
-      textNode.textContent = (Number(text) * 100).toFixed(1);
-    };
-    const playButton = document.createElement('button');
-    playButton.textContent = 'Play';
-    playButton.addEventListener('click', () => (obj as (callback: (text: string) => void) => void)(callback));
-    subContainer.appendChild(playButton);
-    playButton.onclick = () => {
-      playButton.disabled = true;
-      playButton.classList.add('disabled');
-    };
   }
 };
 app.ready.then(() => {
