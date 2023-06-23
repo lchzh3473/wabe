@@ -31,7 +31,7 @@ app.callback = (type: string, obj: unknown) => {
     const textNode = document.createTextNode('');
     subContainer.appendChild(textNode);
     const callback = (text: string) => {
-      textNode.textContent = text;
+      textNode.textContent = (Number(text) * 100).toFixed(1);
     };
     const playButton = document.createElement('button');
     playButton.textContent = 'Play';

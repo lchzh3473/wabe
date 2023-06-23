@@ -1,3 +1,4 @@
+self.AudioContext ||= self.webkitAudioContext;
 const p = document.createElement('p');
 p.style.color = 'red';
 p.style.whiteSpace = 'pre-wrap';

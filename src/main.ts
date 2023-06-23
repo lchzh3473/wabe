@@ -48,9 +48,8 @@ export default class App {
   public ready: Promise<void>;
   // public lz4api!: typeof self.lz4api;
   public callback: (type: string, obj: unknown) => void;
-  public FMOD?: FMOD;
   public constructor() {
-    this.ready = init(this);
+    this.ready = init();
     this.callback = () => {};
   }
   public async readFile(file: File): Promise<void> {
@@ -93,46 +92,24 @@ export default class App {
           // console.log('Texture2D', obj);
           this.callback('Texture2D', imageBitmap);
         } else if (obj instanceof AudioClip) {
-          const audioData = obj.m_AudioData.getData();
-          const fModule = new this.FMOD!();
-          // eslint-disable-next-line no-await-in-loop
-          await fModule.ready;
-          const buf = audioData.slice().buffer;
-          const t = {} as { val: unknown };
-          const u = {} as { val: unknown };
-          const exinfo = fModule.FMOD.CREATESOUNDEXINFO();
-          exinfo.length = buf.byteLength;
-          if (fModule.gSound) fModule.gSound.release();
-          fModule.gSystem.createSound(buf, fModule.FMOD.OPENMEMORY, exinfo, t); let sound = t.val as FMOD_SOUND;
-          // const b = {}; a.gSound.getSubSound(0, b), fModule.gSound = b.val;
-          // const c = [{}, {}, {}, {}]; fModule.gSound.getFormat(...c);
-          // const d = [{}, {}], a.gSound.getDefaults(...d);
-          // const e = {}, a.gSound.getLength(e, fModule.FMOD.TIMEUNIT_PCMBYTES);
-          // const f = [{}, {}, {}, {}]; fModule.gSound.lock(0, e.val, ...f);
-          sound.getNumSubSounds(t); const numsubsounds = t.val as number;
-          if (numsubsounds > 0) {
-            sound.getSubSound(0, t); const subsound = t.val as FMOD_SOUND;
-            sound = subsound;
-          }
-          sound.getFormat(null, null, t, u); const channels = t.val as number; const bits = u.val as number;
-          sound.getDefaults(t, null); const frequency = t.val as number;
-          const sampleRate = Math.floor(frequency);
-          sound.getLength(t, fModule.FMOD.TIMEUNIT_PCMBYTES); const byteLength = t.val as number;
-          console.log(channels, bits, sampleRate, frequency, byteLength);
-          const playSound = (callback: (text: string) => void) => {
-            fModule.gSystem.playSound(sound, null, false, t);
-            const channel = t.val as FMOD_CHANNEL;
-            console.log(channel);
-            requestAnimationFrame(function loop() {
-              channel.getPosition(t, fModule.FMOD.TIMEUNIT_MS);
-              const position = t.val as number;
-              sound.getLength(t, fModule.FMOD.TIMEUNIT_MS);
-              const length = t.val as number;
-              callback(`${position} / ${length}`);
-              // channel.setVolume(0.5);
-              // channel.setPaused(false);
-              requestAnimationFrame(loop);
+          const playSound = async(callback: (text: string) => void) => {
+            const audioData = obj.m_AudioData.getData();
+            const pcm = await new Promise<{ buffer: Float32Array; frequency: number; channels: number }>(resolve => {
+              const worker = new Worker('./fmod.worker.js');
+              worker.postMessage(audioData, [audioData.buffer]);
+              worker.onmessage = ({ data }) => {
+                if (data.progress != null) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                  callback(data.progress);
+                } else if (data.pcm != null) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                  resolve(data.pcm);
+                }
+              };
             });
+            // const pcm = await fsb2pcm(audioData, callback);
+            const actx = new AudioContext();
+            playFloat32PCM(actx, pcm.buffer, pcm.frequency, pcm.channels);
           };
           // console.log(obj.assetsFile.originalPath);
           // console.log('AudioClip', obj);
@@ -146,15 +123,10 @@ export default class App {
     }
   }
 }
-async function init(module: App) {
+async function init() {
   await initLZ4().then((instance: WebAssembly.Instance) => {
     // WebAssembly.instantiateStreaming(fetch('lz4-block-codec.wasm', { mode: 'same-origin' })).then(({ instance }) => {
     self.lz4api = instance.exports as typeof self.lz4api;
-  });
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  await import('./fmod.js').then(({ FMOD }) => {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    Object.assign(module, { FMOD });
   });
   console.log('Hello, world!');
 }
@@ -205,35 +177,22 @@ function getImage(obj: Texture2D): ImageData {
       return new ImageData(new Uint8ClampedArray(obj.m_Width * obj.m_Height * 4), obj.m_Width, obj.m_Height);
   }
 }
-interface FMOD {
-  ready: Promise<void>;
-  FMOD: {
-    CREATESOUNDEXINFO: () => FMOD_CREATESOUNDEXINFO;
-    OPENMEMORY: number;
-    TIMEUNIT_PCMBYTES: number;
-    TIMEUNIT_MS: number;
-  };
-  gSound: FMOD_SOUND | null;
-  gSystem: FMOD_SYSTEM;
-  // eslint-disable-next-line @typescript-eslint/no-misused-new
-  new (): FMOD;
+function readPCMFloat(actx: AudioContext, pcmData = new ArrayBuffer(32), sampleRate = 44100, channels = 2) {
+  const data = new Float32Array(pcmData);
+  const length = data.length / channels;
+  const buffer = actx.createBuffer(channels, length, sampleRate);
+  for (let i = 0; i < channels; i++) {
+    const channelData = buffer.getChannelData(i);
+    for (let j = 0; j < length; j++) {
+      channelData[j] = data[j * channels + i];
+    }
+  }
+  return buffer;
 }
-interface FMOD_CREATESOUNDEXINFO {
-  length: number;
-}
-interface FMOD_SOUND {
-  release: () => void;
-  getNumSubSounds: (outval: { val: unknown }) => void;
-  getSubSound: (index: number, outval: { val: unknown }) => void;
-  getFormat: (a: unknown, b: unknown, c: { val: unknown }, d: { val: unknown }) => void;
-  getDefaults: (a: { val: unknown }, b: unknown) => void;
-  getLength: (a: { val: unknown }, b: number) => void;
-  lock: (a: number, b: number, c: number, d: number) => void;
-}
-interface FMOD_SYSTEM {
-  createSound: (a: ArrayBuffer, b: number, c: FMOD_CREATESOUNDEXINFO, d: { val: unknown }) => void;
-  playSound: (a: FMOD_SOUND, b: unknown, c: boolean, d: { val: unknown }) => void;
-}
-interface FMOD_CHANNEL {
-  getPosition: (a: { val: unknown }, b: number) => void;
+function playFloat32PCM(actx: AudioContext, pcmData = new ArrayBuffer(32), sampleRate = 44100, channels = 2) {
+  const source = actx.createBufferSource();
+  const buffer = readPCMFloat(actx, pcmData, sampleRate, channels);
+  source.buffer = buffer;
+  source.connect(actx.destination);
+  source.start();
 }
