@@ -28,7 +28,7 @@ module.exports = {
     const words = options.words || [];
     return {
       Program(node) {
-        const sourceCode = context.getSourceCode();
+        const { sourceCode } = context;
         // not only report comments, but also report code
         const tokens = sourceCode.tokensAndComments;
         tokens.forEach(token => {

@@ -23,6 +23,7 @@ module.exports = {
     'grouped-accessor-pairs': ['error', 'getBeforeSet'],
     'id-length': 'off',
     'indent': ['error', 2, { SwitchCase: 1 }],
+    'init-declarations': 'off',
     'line-comment-position': 'off',
     'lines-around-comment': ['error', { beforeBlockComment: false }],
     'lines-between-class-members': ['error', 'never'],
@@ -37,6 +38,7 @@ module.exports = {
     'multiline-comment-style': ['error', 'separate-lines'],
     'multiline-ternary': ['error', 'never'],
     'newline-per-chained-call': 'off', // qwq
+    'no-await-in-loop': 'off',
     'no-bitwise': 'off',
     'no-confusing-arrow': 'off', // qwq
     'no-console': 'off', // qwq
@@ -67,15 +69,16 @@ module.exports = {
     'prefer-named-capture-group': 'off', // ?
     'quote-props': ['error', 'consistent-as-needed'],
     'quotes': ['error', 'single'],
+    'require-atomic-updates': ['error', { allowProperties: true }],
     'require-unicode-regexp': 'off', // ?
-    'rulesdir/no-magic-words': ['error', { words: ['lchz\\x68', 'f\\x75ck'] }],
-    'rulesdir/single-line-control-statement-spacing': 'error',
-    'rulesdir/space-before-inline-comments': 'error',
     'semi': ['error', 'always', { omitLastInOneLineBlock: true }],
     'sort-imports': ['error', { ignoreDeclarationSort: true }],
     'sort-keys': 'off',
     'space-before-function-paren': ['error', 'never'],
     'spaced-comment': ['error', 'always', { block: { balanced: true } }],
+    'rulesdir/space-before-inline-comments': 'error',
+    'rulesdir/no-magic-words': ['error', { words: ['lchz\\x68', 'f\\x75ck'] }],
+    'rulesdir/single-line-control-statement-spacing': 'error',
     'wrap-regex': 'off' // someday will be never
   }
 };

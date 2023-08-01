@@ -9,35 +9,30 @@ module.exports = {
     fixable: 'whitespace'
   },
   create(context) {
-    const sourceCode = context.getSourceCode();
-    function checkSpaceAfter(node) {
-      if (!node) return;
-      if (node.loc.start.line !== node.loc.end.line) return; // Not single-line
-      const body = node.consequent || node.body;
-      const token = sourceCode.getFirstToken(body);
-      const prev = sourceCode.getTokenBefore(token);
-      const start = prev.range[1];
-      const end = token.range[0];
-      if (start === end) {
-        context.report({
-          loc: {
-            start: sourceCode.getLocFromIndex(start),
-            end: sourceCode.getLocFromIndex(end)
-          },
-          message: 'There should be a single space after control statements.',
-          fix(fixer) {
-            return fixer.replaceTextRange([start, end], ' ');
-          }
-        });
-      }
-    }
+    const { sourceCode } = context;
     return {
-      IfStatement: checkSpaceAfter,
-      DoWhileStatement: checkSpaceAfter,
-      ForInStatement: checkSpaceAfter,
-      ForOfStatement: checkSpaceAfter,
-      ForStatement: checkSpaceAfter,
-      WhileStatement: checkSpaceAfter
+      ExpressionStatement(node) {
+        const prevToken = sourceCode.getTokenBefore(node, { includeComments: true });
+        if (prevToken && prevToken.loc.end.column === node.loc.start.column) {
+          context.report({
+            node,
+            loc: node.loc,
+            message: 'Expected space before expression statement.',
+            fix(fixer) { return fixer.insertTextBefore(node, ' ') }
+          });
+        }
+      },
+      EmptyStatement(node) {
+        const prevToken = sourceCode.getTokenBefore(node, { includeComments: true });
+        if (prevToken && prevToken.loc.end.column !== node.loc.start.column) {
+          context.report({
+            node,
+            loc: node.loc,
+            message: 'Unexpected space before empty statement.',
+            fix(fixer) { return fixer.removeRange([prevToken.range[1], node.range[0]]) }
+          });
+        }
+      }
     };
   }
 };

@@ -12,7 +12,7 @@ module.exports = {
   create(context) {
     return {
       Program(node) {
-        const sourceCode = context.getSourceCode();
+        const { sourceCode } = context;
         const comments = sourceCode.getAllComments();
         comments.forEach(comment => {
           if (comment.type === 'Line') {

@@ -69,7 +69,7 @@ export default class EndianBinaryReader extends BinaryReader {
     const maxSize = limit ?? this.length;
     const { buffer } = this;
     let counter = 0;
-    while (buffer[this.position + counter] !== 0 && counter++ < maxSize) ;
+    while (buffer[this.position + counter] !== 0 && counter++ < maxSize);
     const barr = buffer.subarray(this.position, this.position + counter);
     this.position += counter + 1;
     return new TextDecoder('utf-8').decode(barr);

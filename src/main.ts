@@ -95,7 +95,8 @@ export default class App {
           const controller = document.createElement('div');
           const textNode = document.createTextNode('');
           controller.appendChild(textNode);
-          const audioData = obj.m_AudioData.getData();
+          const audioData = obj.m_AudioData.getData().slice();
+          // todo: fsb header detection
           // const pcm = await fsb2pcm(audioData, callback);
           new Promise<{ buffer: Float32Array; frequency: number; channels: number }>(resolve => {
             const worker = new Worker('./fmod.worker.js');
