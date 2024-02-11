@@ -10,9 +10,25 @@ app.callback = (type: string, obj: unknown) => {
   if (type === 'TextAsset') {
     const textArea = document.createElement('textarea');
     textArea.value = obj as string;
-    container.appendChild(textArea);
+    // container.appendChild(textArea);
     textArea.style.cssText += ';width:80%;max-width:854px;min-height:100px;display:block;margin:0 auto';
     textArea.readOnly = true;
+    const controller = document.createElement('div');
+    container.appendChild(controller);
+    controller.appendChild(textArea);
+    const downloadButton = document.createElement('button');
+    downloadButton.textContent = 'Download Text';
+    const downloadText = () => {
+      const blob = new Blob([textArea.value], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'plain.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    downloadButton.addEventListener('click', downloadText);
+    controller.appendChild(downloadButton);
   }
   if (type === 'Texture2D') {
     const imageBitmap = obj as ImageBitmap;
