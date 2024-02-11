@@ -1,5 +1,5 @@
 export default function decodeBlockLZ4(blockInfoBytes: Uint8Array, uncompressedSize: number): Uint8Array {
-  if (!self.lz4api) { throw new Error('lz4api not loaded') }
+  if (!self.lz4api) throw new Error('lz4api not loaded');
   const { lz4api } = self;
   const inputSize = blockInfoBytes.length;
   const mem0 = lz4api.getLinearMemoryOffset();

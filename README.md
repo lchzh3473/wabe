@@ -1,4 +1,4 @@
-# [Demo](https://lchz&#104;3473.github.io/wabe/index "Unity资源提取器")
+# <!-- prettier-ignore -->[Demo](https://lchz&#104;3473.github.io/wabe/index "Unity资源提取器")
 
 ## 简介
 
